@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Score Cropper</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <h1 class="logo">🎵 Music Score Cropper</h1>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('about') }}">About</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main>
+        <div class="container">
+            <div class="hero">
+                <h2>Crop PDF Score Margins</h2>
+                <p>Upload your PDF music scores and automatically crop margins for better viewing on iPad and tablets.</p>
+            </div>
+            
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="alert">
+                        {% for message in messages %}
+                            <p>{{ message }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <div class="upload-section">
+                <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="file">Select PDF Score:</label>
+                        <input type="file" id="file" name="file" accept=".pdf" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="margin">Margin to Crop (%):</label>
+                        <input type="range" id="margin" name="margin" min="5" max="25" value="10" step="1">
+                        <span id="margin-value">10%</span>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary">Crop PDF</button>
+                </form>
+            </div>
+            
+            <div class="info-section">
+                <h3>How it works:</h3>
+                <ol>
+                    <li>Upload your PDF music score</li>
+                    <li>Adjust the margin percentage if needed (default is 10%)</li>
+                    <li>Click "Crop PDF" to process</li>
+                    <li>Download your cropped PDF with larger notes for better viewing</li>
+                </ol>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <p>&copy; 2024 Music Score Cropper | Built for musicians</p>
+    </footer>
+    
+    <script>
+        // Update margin value display
+        const marginSlider = document.getElementById('margin');
+        const marginValue = document.getElementById('margin-value');
+        
+        marginSlider.addEventListener('input', function() {
+            marginValue.textContent = this.value + '%';
+        });
+    </script>
+</body>
+</html>
