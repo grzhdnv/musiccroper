@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Music Score Cropper</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <h1 class="logo">🎵 Music Score Cropper</h1>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('about') }}">About</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main>
+        <div class="container">
+            <div class="about-section">
+                <h2>About Music Score Cropper</h2>
+                <p>
+                    Music Score Cropper is a web application designed to help musicians optimize their PDF music scores 
+                    for viewing on tablets, especially iPads. By automatically cropping unnecessary margins from your 
+                    sheet music, you can enjoy larger, more readable notes and annotations.
+                </p>
+                
+                <h3>Why Crop PDF Scores?</h3>
+                <p>
+                    Many PDF music scores contain large margins that waste valuable screen space. When viewing these 
+                    scores on tablets or e-readers, the actual music notation becomes smaller than it needs to be. 
+                    By cropping these margins, you can:
+                </p>
+                <ul>
+                    <li>See larger musical notation</li>
+                    <li>Reduce eye strain during practice</li>
+                    <li>Make better use of your tablet's screen</li>
+                    <li>Improve readability, especially for complex scores</li>
+                </ul>
+                
+                <h3>Features</h3>
+                <ul>
+                    <li>Simple drag-and-drop interface</li>
+                    <li>Adjustable margin cropping (5% to 25%)</li>
+                    <li>Fast processing</li>
+                    <li>Secure - files are automatically deleted after processing</li>
+                    <li>No registration required</li>
+                </ul>
+                
+                <h3>Privacy</h3>
+                <p>
+                    Your uploaded files are processed on the server and immediately deleted after the cropped version 
+                    is generated. We do not store or share your music scores.
+                </p>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <p>&copy; 2024 Music Score Cropper | Built for musicians</p>
+    </footer>
+</body>
+</html>

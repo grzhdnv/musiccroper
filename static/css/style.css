@@ -1,0 +1,253 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Navigation */
+nav {
+    background-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 1rem 0;
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.5rem;
+    color: #667eea;
+    font-weight: 700;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.nav-links a:hover {
+    color: #667eea;
+}
+
+/* Main Content */
+main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.container {
+    max-width: 800px;
+    width: 100%;
+    background-color: white;
+    border-radius: 20px;
+    padding: 3rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+/* Hero Section */
+.hero {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.hero h2 {
+    font-size: 2.5rem;
+    color: #667eea;
+    margin-bottom: 1rem;
+}
+
+.hero p {
+    font-size: 1.1rem;
+    color: #666;
+}
+
+/* Alert Messages */
+.alert {
+    background-color: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    color: #856404;
+}
+
+/* Upload Section */
+.upload-section {
+    background-color: #f8f9fa;
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 2rem 0;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group input[type="file"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px dashed #667eea;
+    border-radius: 8px;
+    background-color: white;
+    cursor: pointer;
+    transition: border-color 0.3s;
+}
+
+.form-group input[type="file"]:hover {
+    border-color: #764ba2;
+}
+
+.form-group input[type="range"] {
+    width: 80%;
+    margin-right: 1rem;
+}
+
+#margin-value {
+    font-weight: 600;
+    color: #667eea;
+    font-size: 1.1rem;
+}
+
+/* Buttons */
+.btn-primary {
+    width: 100%;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+/* Info Section */
+.info-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: #f0f4ff;
+    border-radius: 10px;
+}
+
+.info-section h3 {
+    color: #667eea;
+    margin-bottom: 1rem;
+}
+
+.info-section ol {
+    padding-left: 1.5rem;
+}
+
+.info-section li {
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+/* About Section */
+.about-section {
+    line-height: 1.8;
+}
+
+.about-section h2 {
+    color: #667eea;
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+}
+
+.about-section h3 {
+    color: #764ba2;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+.about-section p {
+    margin-bottom: 1rem;
+    color: #555;
+}
+
+.about-section ul {
+    margin-left: 2rem;
+    margin-bottom: 1rem;
+}
+
+.about-section li {
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+/* Footer */
+footer {
+    background-color: rgba(255, 255, 255, 0.95);
+    text-align: center;
+    padding: 1.5rem;
+    margin-top: auto;
+}
+
+footer p {
+    color: #666;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 2rem 1.5rem;
+    }
+    
+    .hero h2 {
+        font-size: 2rem;
+    }
+    
+    .nav-container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .nav-links {
+        gap: 1rem;
+    }
+}
