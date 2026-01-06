@@ -63,13 +63,16 @@
             <div class="preview-section">
                 <h3>PDF Preview</h3>
                 <div class="preview-container">
+                <div class="canvas-wrapper">
                     <canvas id="pdf-canvas"></canvas>
                     <canvas id="overlay-canvas"></canvas>
+                </div>
                 </div>
                 <div class="page-controls">
                     <button id="prev-page" class="btn-secondary">← Previous</button>
                     <span id="page-info">Page <span id="page-num">1</span> of <span id="page-count">1</span></span>
                     <button id="next-page" class="btn-secondary">Next →</button>
+                <a href="{{ url_for('index') }}" class="btn-secondary">Back</a>
                 </div>
             </div>
             
@@ -140,7 +143,7 @@
         let pageNum = 1;
         let pageRendering = false;
         let pageNumPending = null;
-        let scale = 1.5;
+        let scale = 1.0;
         let pdfCanvas = document.getElementById('pdf-canvas');
         let overlayCanvas = document.getElementById('overlay-canvas');
         let ctx = pdfCanvas.getContext('2d');
@@ -160,6 +163,22 @@
             pageRendering = true;
             
             pdfDoc.getPage(num).then(function(page) {
+                // Calculate scale to fit parent container (preview-section)
+                const section = document.querySelector('.preview-section');
+                // Use a temporary viewport to get dimensions at scale 1.0
+                const unscaledViewport = page.getViewport({ scale: 1.0 });
+
+                // Use section width minus padding (approx 4rem = 64px)
+                const sectionWidth = section.clientWidth - 64;
+                // Use a reasonable max height or window height
+                const containerHeight = window.innerHeight * 0.7;
+
+                const scaleX = sectionWidth / unscaledViewport.width;
+                const scaleY = containerHeight / unscaledViewport.height;
+
+                // Choose the smaller scale to fit both dimensions
+                scale = Math.min(scaleX, scaleY);
+
                 const viewport = page.getViewport({ scale: scale });
                 
                 // Store page dimensions for overlay
