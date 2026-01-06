@@ -148,7 +148,7 @@
         let currentPageDimensions = { width: 0, height: 0 };
         
         // Load PDF
-        const pdfUrl = "{{ url_for('preview_pdf', filename=uploaded_filename) }}";
+        const pdfUrl = {{ url_for('preview_pdf', filename=uploaded_filename) | tojson }};
         
         pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
             pdfDoc = pdf;
@@ -243,7 +243,8 @@
             marginValues[side].textContent = value.toFixed(1);
             
             // Calculate points (PDF points, 1/72 inch)
-            // We'll use the current page dimensions
+            // Note: This is an approximation based on the rendered canvas dimensions
+            // divided by the scale factor. Actual PDF internal coordinates may vary.
             let points = 0;
             if (side === 'top' || side === 'bottom') {
                 points = (currentPageDimensions.height / scale) * (value / 100);
@@ -344,17 +345,6 @@
         
         // Initialize margin displays
         Object.keys(margins).forEach(side => updateMarginDisplay(side));
-    </script>
-    {% else %}
-    <script>
-        // Update margin value display for upload form (if needed in future)
-        const marginSlider = document.getElementById('margin');
-        if (marginSlider) {
-            const marginValue = document.getElementById('margin-value');
-            marginSlider.addEventListener('input', function() {
-                marginValue.textContent = this.value + '%';
-            });
-        }
     </script>
     {% endif %}
 </body>

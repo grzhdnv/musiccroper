@@ -121,11 +121,17 @@ def crop_pdf():
         return redirect(url_for('index'))
     
     try:
-        # Get individual margin values from form
+        # Get individual margin values from form and validate
         top = float(request.form.get('top', 10))
         right = float(request.form.get('right', 10))
         bottom = float(request.form.get('bottom', 10))
         left = float(request.form.get('left', 10))
+        
+        # Validate margin values are within acceptable range (0-30%)
+        for margin_name, margin_value in [('top', top), ('right', right), ('bottom', bottom), ('left', left)]:
+            if not (0 <= margin_value <= 30):
+                flash(f'Invalid {margin_name} margin value. Must be between 0 and 30%.')
+                return redirect(url_for('index'))
         
         # Generate output filename
         output_filename = f"cropped_{filename}"
