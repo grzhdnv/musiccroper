@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Music Score Cropper</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- PDF.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
     <nav>
@@ -34,20 +36,15 @@
                 {% endif %}
             {% endwith %}
             
+            {% if not uploaded_filename %}
             <div class="upload-section">
-                <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+                <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" id="upload-form">
                     <div class="form-group">
                         <label for="file">Select PDF Score:</label>
                         <input type="file" id="file" name="file" accept=".pdf" required>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="margin">Margin to Crop (%):</label>
-                        <input type="range" id="margin" name="margin" min="5" max="25" value="10" step="1">
-                        <span id="margin-value">10%</span>
-                    </div>
-                    
-                    <button type="submit" class="btn-primary">Crop PDF</button>
+                    <button type="submit" class="btn-primary">Upload & Preview</button>
                 </form>
             </div>
             
@@ -55,11 +52,78 @@
                 <h3>How it works:</h3>
                 <ol>
                     <li>Upload your PDF music score</li>
-                    <li>Adjust the margin percentage if needed (default is 10%)</li>
+                    <li>Preview the PDF and adjust margins for each side independently</li>
+                    <li>See real-time crop boundaries on the preview</li>
                     <li>Click "Crop PDF" to process</li>
                     <li>Download your cropped PDF with larger notes for better viewing</li>
                 </ol>
             </div>
+            {% else %}
+            <!-- Preview Section -->
+            <div class="preview-section">
+                <h3>PDF Preview</h3>
+                <div class="preview-container">
+                    <canvas id="pdf-canvas"></canvas>
+                    <canvas id="overlay-canvas"></canvas>
+                </div>
+                <div class="page-controls">
+                    <button id="prev-page" class="btn-secondary">← Previous</button>
+                    <span id="page-info">Page <span id="page-num">1</span> of <span id="page-count">1</span></span>
+                    <button id="next-page" class="btn-secondary">Next →</button>
+                </div>
+            </div>
+            
+            <!-- Margin Controls -->
+            <div class="margin-controls">
+                <h3>Adjust Margins</h3>
+                <form id="crop-form" action="{{ url_for('crop_pdf') }}" method="post">
+                    <input type="hidden" name="filename" value="{{ uploaded_filename }}">
+                    
+                    <div class="margin-grid">
+                        <div class="margin-control">
+                            <label for="top-margin">Top Margin (%):</label>
+                            <input type="range" id="top-margin" name="top" min="0" max="30" value="10" step="0.5">
+                            <div class="margin-values">
+                                <span class="margin-percent"><span id="top-value">10</span>%</span>
+                                <span class="margin-points"><span id="top-points">0</span> pts</span>
+                            </div>
+                        </div>
+                        
+                        <div class="margin-control">
+                            <label for="right-margin">Right Margin (%):</label>
+                            <input type="range" id="right-margin" name="right" min="0" max="30" value="10" step="0.5">
+                            <div class="margin-values">
+                                <span class="margin-percent"><span id="right-value">10</span>%</span>
+                                <span class="margin-points"><span id="right-points">0</span> pts</span>
+                            </div>
+                        </div>
+                        
+                        <div class="margin-control">
+                            <label for="bottom-margin">Bottom Margin (%):</label>
+                            <input type="range" id="bottom-margin" name="bottom" min="0" max="30" value="10" step="0.5">
+                            <div class="margin-values">
+                                <span class="margin-percent"><span id="bottom-value">10</span>%</span>
+                                <span class="margin-points"><span id="bottom-points">0</span> pts</span>
+                            </div>
+                        </div>
+                        
+                        <div class="margin-control">
+                            <label for="left-margin">Left Margin (%):</label>
+                            <input type="range" id="left-margin" name="left" min="0" max="30" value="10" step="0.5">
+                            <div class="margin-values">
+                                <span class="margin-percent"><span id="left-value">10</span>%</span>
+                                <span class="margin-points"><span id="left-points">0</span> pts</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button type="button" id="reset-margins" class="btn-secondary">Reset to Default</button>
+                        <button type="submit" class="btn-primary">Crop PDF</button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
         </div>
     </main>
     
@@ -67,14 +131,231 @@
         <p>&copy; 2024 Music Score Cropper | Built for musicians</p>
     </footer>
     
+    {% if uploaded_filename %}
     <script>
-        // Update margin value display
-        const marginSlider = document.getElementById('margin');
-        const marginValue = document.getElementById('margin-value');
+        // PDF.js configuration
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         
-        marginSlider.addEventListener('input', function() {
-            marginValue.textContent = this.value + '%';
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+        let scale = 1.5;
+        let pdfCanvas = document.getElementById('pdf-canvas');
+        let overlayCanvas = document.getElementById('overlay-canvas');
+        let ctx = pdfCanvas.getContext('2d');
+        let overlayCtx = overlayCanvas.getContext('2d');
+        let currentPageDimensions = { width: 0, height: 0 };
+        
+        // Load PDF
+        const pdfUrl = "{{ url_for('preview_pdf', filename=uploaded_filename) }}";
+        
+        pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
+            pdfDoc = pdf;
+            document.getElementById('page-count').textContent = pdf.numPages;
+            renderPage(pageNum);
         });
+        
+        function renderPage(num) {
+            pageRendering = true;
+            
+            pdfDoc.getPage(num).then(function(page) {
+                const viewport = page.getViewport({ scale: scale });
+                
+                // Store page dimensions for overlay
+                currentPageDimensions.width = viewport.width;
+                currentPageDimensions.height = viewport.height;
+                
+                pdfCanvas.height = viewport.height;
+                pdfCanvas.width = viewport.width;
+                overlayCanvas.height = viewport.height;
+                overlayCanvas.width = viewport.width;
+                
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                
+                const renderTask = page.render(renderContext);
+                
+                renderTask.promise.then(function() {
+                    pageRendering = false;
+                    if (pageNumPending !== null) {
+                        renderPage(pageNumPending);
+                        pageNumPending = null;
+                    }
+                    
+                    // Draw initial overlay
+                    drawOverlay();
+                });
+            });
+            
+            document.getElementById('page-num').textContent = num;
+        }
+        
+        function queueRenderPage(num) {
+            if (pageRendering) {
+                pageNumPending = num;
+            } else {
+                renderPage(num);
+            }
+        }
+        
+        function onPrevPage() {
+            if (pageNum <= 1) return;
+            pageNum--;
+            queueRenderPage(pageNum);
+        }
+        
+        function onNextPage() {
+            if (pageNum >= pdfDoc.numPages) return;
+            pageNum++;
+            queueRenderPage(pageNum);
+        }
+        
+        document.getElementById('prev-page').addEventListener('click', onPrevPage);
+        document.getElementById('next-page').addEventListener('click', onNextPage);
+        
+        // Margin controls
+        const margins = {
+            top: document.getElementById('top-margin'),
+            right: document.getElementById('right-margin'),
+            bottom: document.getElementById('bottom-margin'),
+            left: document.getElementById('left-margin')
+        };
+        
+        const marginValues = {
+            top: document.getElementById('top-value'),
+            right: document.getElementById('right-value'),
+            bottom: document.getElementById('bottom-value'),
+            left: document.getElementById('left-value')
+        };
+        
+        const marginPoints = {
+            top: document.getElementById('top-points'),
+            right: document.getElementById('right-points'),
+            bottom: document.getElementById('bottom-points'),
+            left: document.getElementById('left-points')
+        };
+        
+        function updateMarginDisplay(side) {
+            const value = parseFloat(margins[side].value);
+            marginValues[side].textContent = value.toFixed(1);
+            
+            // Calculate points (PDF points, 1/72 inch)
+            // We'll use the current page dimensions
+            let points = 0;
+            if (side === 'top' || side === 'bottom') {
+                points = (currentPageDimensions.height / scale) * (value / 100);
+            } else {
+                points = (currentPageDimensions.width / scale) * (value / 100);
+            }
+            marginPoints[side].textContent = Math.round(points);
+            
+            drawOverlay();
+        }
+        
+        // Add event listeners to all margin sliders
+        Object.keys(margins).forEach(side => {
+            margins[side].addEventListener('input', () => updateMarginDisplay(side));
+        });
+        
+        function drawOverlay() {
+            // Clear overlay
+            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+            
+            // Get margin percentages
+            const topPercent = parseFloat(margins.top.value) / 100;
+            const rightPercent = parseFloat(margins.right.value) / 100;
+            const bottomPercent = parseFloat(margins.bottom.value) / 100;
+            const leftPercent = parseFloat(margins.left.value) / 100;
+            
+            // Calculate crop boundaries
+            const cropLeft = overlayCanvas.width * leftPercent;
+            const cropRight = overlayCanvas.width * (1 - rightPercent);
+            const cropTop = overlayCanvas.height * topPercent;
+            const cropBottom = overlayCanvas.height * (1 - bottomPercent);
+            
+            // Draw semi-transparent overlay on cropped areas
+            overlayCtx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            
+            // Top area
+            overlayCtx.fillRect(0, 0, overlayCanvas.width, cropTop);
+            
+            // Bottom area
+            overlayCtx.fillRect(0, cropBottom, overlayCanvas.width, overlayCanvas.height - cropBottom);
+            
+            // Left area
+            overlayCtx.fillRect(0, cropTop, cropLeft, cropBottom - cropTop);
+            
+            // Right area
+            overlayCtx.fillRect(cropRight, cropTop, overlayCanvas.width - cropRight, cropBottom - cropTop);
+            
+            // Draw crop boundary
+            overlayCtx.strokeStyle = '#667eea';
+            overlayCtx.lineWidth = 3;
+            overlayCtx.setLineDash([10, 5]);
+            overlayCtx.strokeRect(cropLeft, cropTop, cropRight - cropLeft, cropBottom - cropTop);
+            
+            // Draw corner indicators
+            const cornerSize = 20;
+            overlayCtx.strokeStyle = '#764ba2';
+            overlayCtx.lineWidth = 4;
+            overlayCtx.setLineDash([]);
+            
+            // Top-left corner
+            overlayCtx.beginPath();
+            overlayCtx.moveTo(cropLeft, cropTop + cornerSize);
+            overlayCtx.lineTo(cropLeft, cropTop);
+            overlayCtx.lineTo(cropLeft + cornerSize, cropTop);
+            overlayCtx.stroke();
+            
+            // Top-right corner
+            overlayCtx.beginPath();
+            overlayCtx.moveTo(cropRight - cornerSize, cropTop);
+            overlayCtx.lineTo(cropRight, cropTop);
+            overlayCtx.lineTo(cropRight, cropTop + cornerSize);
+            overlayCtx.stroke();
+            
+            // Bottom-left corner
+            overlayCtx.beginPath();
+            overlayCtx.moveTo(cropLeft, cropBottom - cornerSize);
+            overlayCtx.lineTo(cropLeft, cropBottom);
+            overlayCtx.lineTo(cropLeft + cornerSize, cropBottom);
+            overlayCtx.stroke();
+            
+            // Bottom-right corner
+            overlayCtx.beginPath();
+            overlayCtx.moveTo(cropRight - cornerSize, cropBottom);
+            overlayCtx.lineTo(cropRight, cropBottom);
+            overlayCtx.lineTo(cropRight, cropBottom - cornerSize);
+            overlayCtx.stroke();
+        }
+        
+        // Reset margins button
+        document.getElementById('reset-margins').addEventListener('click', function() {
+            margins.top.value = 10;
+            margins.right.value = 10;
+            margins.bottom.value = 10;
+            margins.left.value = 10;
+            
+            Object.keys(margins).forEach(side => updateMarginDisplay(side));
+        });
+        
+        // Initialize margin displays
+        Object.keys(margins).forEach(side => updateMarginDisplay(side));
     </script>
+    {% else %}
+    <script>
+        // Update margin value display for upload form (if needed in future)
+        const marginSlider = document.getElementById('margin');
+        if (marginSlider) {
+            const marginValue = document.getElementById('margin-value');
+            marginSlider.addEventListener('input', function() {
+                marginValue.textContent = this.value + '%';
+            });
+        }
+    </script>
+    {% endif %}
 </body>
 </html>

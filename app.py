@@ -22,14 +22,17 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 
-def crop_pdf_margins(input_path, output_path, margin_percent=10):
+def crop_pdf_margins(input_path, output_path, top=10, right=10, bottom=10, left=10):
     """
-    Crop margins from a PDF file
+    Crop margins from a PDF file with individual margin control
     
     Args:
         input_path: Path to input PDF file
         output_path: Path to save cropped PDF
-        margin_percent: Percentage of margin to crop from each side (default: 10%)
+        top: Percentage of margin to crop from top (default: 10%)
+        right: Percentage of margin to crop from right (default: 10%)
+        bottom: Percentage of margin to crop from bottom (default: 10%)
+        left: Percentage of margin to crop from left (default: 10%)
     """
     reader = PdfReader(input_path)
     writer = PdfWriter()
@@ -40,13 +43,15 @@ def crop_pdf_margins(input_path, output_path, margin_percent=10):
         width = float(media_box.width)
         height = float(media_box.height)
         
-        # Calculate crop margins
-        crop_x = width * (margin_percent / 100)
-        crop_y = height * (margin_percent / 100)
+        # Calculate crop margins for each side
+        crop_left = width * (left / 100)
+        crop_right = width * (right / 100)
+        crop_bottom = height * (bottom / 100)
+        crop_top = height * (top / 100)
         
         # Set new page boundaries (crop margins)
-        page.mediabox.lower_left = (crop_x, crop_y)
-        page.mediabox.upper_right = (width - crop_x, height - crop_y)
+        page.mediabox.lower_left = (crop_left, crop_bottom)
+        page.mediabox.upper_right = (width - crop_right, height - crop_top)
         
         writer.add_page(page)
     
@@ -63,7 +68,7 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    """Handle PDF file upload and cropping"""
+    """Handle PDF file upload for preview"""
     if 'file' not in request.files:
         flash('No file selected')
         return redirect(request.url)
@@ -79,31 +84,67 @@ def upload_file():
         input_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(input_path)
         
-        # Get margin percentage from form
-        margin_percent = int(request.form.get('margin', 10))
+        # Return to index with filename for preview
+        return render_template('index.html', uploaded_filename=filename)
+    else:
+        flash('Invalid file type. Please upload a PDF file.')
+        return redirect(url_for('index'))
+
+
+@app.route('/preview/<filename>')
+def preview_pdf(filename):
+    """Serve uploaded PDF for preview"""
+    filename = secure_filename(filename)
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
+    if os.path.exists(file_path):
+        return send_file(file_path, mimetype='application/pdf')
+    else:
+        flash('File not found')
+        return redirect(url_for('index'))
+
+
+@app.route('/crop', methods=['POST'])
+def crop_pdf():
+    """Handle PDF cropping with individual margins"""
+    filename = request.form.get('filename')
+    
+    if not filename:
+        flash('No file specified')
+        return redirect(url_for('index'))
+    
+    filename = secure_filename(filename)
+    input_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
+    if not os.path.exists(input_path):
+        flash('File not found')
+        return redirect(url_for('index'))
+    
+    try:
+        # Get individual margin values from form
+        top = float(request.form.get('top', 10))
+        right = float(request.form.get('right', 10))
+        bottom = float(request.form.get('bottom', 10))
+        left = float(request.form.get('left', 10))
         
         # Generate output filename
         output_filename = f"cropped_{filename}"
         output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
         
-        try:
-            # Crop the PDF
-            crop_pdf_margins(input_path, output_path, margin_percent)
-            
-            # Clean up uploaded file
-            os.remove(input_path)
-            
-            return send_file(
-                output_path,
-                as_attachment=True,
-                download_name=output_filename,
-                mimetype='application/pdf'
-            )
-        except Exception as e:
-            flash(f'Error processing PDF: {str(e)}')
-            return redirect(url_for('index'))
-    else:
-        flash('Invalid file type. Please upload a PDF file.')
+        # Crop the PDF with individual margins
+        crop_pdf_margins(input_path, output_path, top, right, bottom, left)
+        
+        # Clean up uploaded file
+        os.remove(input_path)
+        
+        return send_file(
+            output_path,
+            as_attachment=True,
+            download_name=output_filename,
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        flash(f'Error processing PDF: {str(e)}')
         return redirect(url_for('index'))
 
 
