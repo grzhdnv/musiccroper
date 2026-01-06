@@ -6,7 +6,7 @@
     <title>Music Score Cropper</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <!-- PDF.js library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="{{ url_for('static', filename='js/pdfjs/pdf.min.js') }}"></script>
 </head>
 <body>
     <nav>
@@ -134,7 +134,7 @@
     {% if uploaded_filename %}
     <script>
         // PDF.js configuration
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "{{ url_for('static', filename='js/pdfjs/pdf.worker.min.js') }}";
         
         let pdfDoc = null;
         let pageNum = 1;
