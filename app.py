@@ -43,15 +43,50 @@ def crop_pdf_margins(input_path, output_path, top=10, right=10, bottom=10, left=
         width = float(media_box.width)
         height = float(media_box.height)
         
-        # Calculate crop margins for each side
-        crop_left = width * (left / 100)
-        crop_right = width * (right / 100)
-        crop_bottom = height * (bottom / 100)
-        crop_top = height * (top / 100)
+        # Get rotation and normalize it
+        rotation = page.rotation % 360
+
+        # Calculate crop margins based on rotation
+        if rotation == 90:
+            # 90 degrees clockwise
+            # Visual Top -> Physical Left
+            # Visual Right -> Physical Top
+            # Visual Bottom -> Physical Right
+            # Visual Left -> Physical Bottom
+            crop_physical_left = width * (top / 100)
+            crop_physical_right = width * (bottom / 100)
+            crop_physical_bottom = height * (left / 100)
+            crop_physical_top = height * (right / 100)
+        elif rotation == 180:
+            # 180 degrees
+            # Visual Top -> Physical Bottom
+            # Visual Right -> Physical Left
+            # Visual Bottom -> Physical Top
+            # Visual Left -> Physical Right
+            crop_physical_left = width * (right / 100)
+            crop_physical_right = width * (left / 100)
+            crop_physical_bottom = height * (top / 100)
+            crop_physical_top = height * (bottom / 100)
+        elif rotation == 270:
+            # 270 degrees clockwise
+            # Visual Top -> Physical Right
+            # Visual Right -> Physical Bottom
+            # Visual Bottom -> Physical Left
+            # Visual Left -> Physical Top
+            crop_physical_left = width * (bottom / 100)
+            crop_physical_right = width * (top / 100)
+            crop_physical_bottom = height * (right / 100)
+            crop_physical_top = height * (left / 100)
+        else:
+            # 0 degrees (normal)
+            crop_physical_left = width * (left / 100)
+            crop_physical_right = width * (right / 100)
+            crop_physical_bottom = height * (bottom / 100)
+            crop_physical_top = height * (top / 100)
         
         # Set new page boundaries (crop margins)
-        page.mediabox.lower_left = (crop_left, crop_bottom)
-        page.mediabox.upper_right = (width - crop_right, height - crop_top)
+        page.mediabox.lower_left = (crop_physical_left, crop_physical_bottom)
+        page.mediabox.upper_right = (width - crop_physical_right, height - crop_physical_top)
         
         writer.add_page(page)
     
