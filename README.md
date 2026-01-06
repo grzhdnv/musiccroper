@@ -26,6 +26,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 3. Install dependencies:
 ```bash
+# Requires Python 3.12 latest
 pip install -r requirements.txt
 ```
 
