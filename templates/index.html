@@ -81,8 +81,8 @@
                     
                     <div class="margin-grid">
                         <div class="margin-control">
-                            <label for="top-margin">Top Margin (%):</label>
-                            <input type="range" id="top-margin" name="top" min="0" max="30" value="10" step="0.5">
+                            <label for="top-margin">Top Margin:</label>
+                            <input type="hidden" id="top-margin" name="top" value="10">
                             <div class="margin-values">
                                 <span class="margin-percent"><span id="top-value">10</span>%</span>
                                 <span class="margin-points"><span id="top-points">0</span> pts</span>
@@ -90,8 +90,8 @@
                         </div>
                         
                         <div class="margin-control">
-                            <label for="right-margin">Right Margin (%):</label>
-                            <input type="range" id="right-margin" name="right" min="0" max="30" value="10" step="0.5">
+                            <label for="right-margin">Right Margin:</label>
+                            <input type="hidden" id="right-margin" name="right" value="10">
                             <div class="margin-values">
                                 <span class="margin-percent"><span id="right-value">10</span>%</span>
                                 <span class="margin-points"><span id="right-points">0</span> pts</span>
@@ -99,8 +99,8 @@
                         </div>
                         
                         <div class="margin-control">
-                            <label for="bottom-margin">Bottom Margin (%):</label>
-                            <input type="range" id="bottom-margin" name="bottom" min="0" max="30" value="10" step="0.5">
+                            <label for="bottom-margin">Bottom Margin:</label>
+                            <input type="hidden" id="bottom-margin" name="bottom" value="10">
                             <div class="margin-values">
                                 <span class="margin-percent"><span id="bottom-value">10</span>%</span>
                                 <span class="margin-points"><span id="bottom-points">0</span> pts</span>
@@ -108,8 +108,8 @@
                         </div>
                         
                         <div class="margin-control">
-                            <label for="left-margin">Left Margin (%):</label>
-                            <input type="range" id="left-margin" name="left" min="0" max="30" value="10" step="0.5">
+                            <label for="left-margin">Left Margin:</label>
+                            <input type="hidden" id="left-margin" name="left" value="10">
                             <div class="margin-values">
                                 <span class="margin-percent"><span id="left-value">10</span>%</span>
                                 <span class="margin-points"><span id="left-points">0</span> pts</span>
@@ -256,9 +256,125 @@
             drawOverlay();
         }
         
-        // Add event listeners to all margin sliders
-        Object.keys(margins).forEach(side => {
-            margins[side].addEventListener('input', () => updateMarginDisplay(side));
+        // Dragging state
+        let isDragging = false;
+        let dragSide = null;
+        const dragThreshold = 10; // pixels
+
+        // Overlay canvas interaction
+        overlayCanvas.addEventListener('mousedown', function(e) {
+            const rect = overlayCanvas.getBoundingClientRect();
+            // Calculate scale in case display size differs from internal size
+            const scaleX = overlayCanvas.width / rect.width;
+            const scaleY = overlayCanvas.height / rect.height;
+
+            // Mouse coordinates in canvas units
+            const mouseX = (e.clientX - rect.left) * scaleX;
+            const mouseY = (e.clientY - rect.top) * scaleY;
+
+            // Get current crop lines
+            const topPercent = parseFloat(margins.top.value) / 100;
+            const rightPercent = parseFloat(margins.right.value) / 100;
+            const bottomPercent = parseFloat(margins.bottom.value) / 100;
+            const leftPercent = parseFloat(margins.left.value) / 100;
+
+            const cropLeft = overlayCanvas.width * leftPercent;
+            const cropRight = overlayCanvas.width * (1 - rightPercent);
+            const cropTop = overlayCanvas.height * topPercent;
+            const cropBottom = overlayCanvas.height * (1 - bottomPercent);
+
+            // Check closeness to lines (using threshold scaled to canvas units)
+            // Note: We're comparing canvas units directly, so threshold effectively scales with canvas resolution
+            // Ideally we want screen pixel threshold.
+            const thresholdX = dragThreshold * scaleX;
+            const thresholdY = dragThreshold * scaleY;
+
+            if (Math.abs(mouseY - cropTop) < thresholdY) {
+                isDragging = true;
+                dragSide = 'top';
+            } else if (Math.abs(mouseY - cropBottom) < thresholdY) {
+                isDragging = true;
+                dragSide = 'bottom';
+            } else if (Math.abs(mouseX - cropLeft) < thresholdX) {
+                isDragging = true;
+                dragSide = 'left';
+            } else if (Math.abs(mouseX - cropRight) < thresholdX) {
+                isDragging = true;
+                dragSide = 'right';
+            }
+        });
+
+        overlayCanvas.addEventListener('mousemove', function(e) {
+            const rect = overlayCanvas.getBoundingClientRect();
+            const scaleX = overlayCanvas.width / rect.width;
+            const scaleY = overlayCanvas.height / rect.height;
+            const mouseX = (e.clientX - rect.left) * scaleX;
+            const mouseY = (e.clientY - rect.top) * scaleY;
+            const thresholdX = dragThreshold * scaleX;
+            const thresholdY = dragThreshold * scaleY;
+
+            if (isDragging) {
+                let newValue;
+                // Limit max margin to 50%
+                const limit = 50;
+
+                if (dragSide === 'top') {
+                    newValue = (mouseY / overlayCanvas.height) * 100;
+                    newValue = Math.max(0, Math.min(newValue, limit));
+                    // Ensure top doesn't cross bottom
+                    if (newValue < (100 - parseFloat(margins.bottom.value))) {
+                         margins.top.value = newValue;
+                    }
+                } else if (dragSide === 'bottom') {
+                    newValue = (1 - (mouseY / overlayCanvas.height)) * 100;
+                    newValue = Math.max(0, Math.min(newValue, limit));
+                     if (newValue < (100 - parseFloat(margins.top.value))) {
+                        margins.bottom.value = newValue;
+                    }
+                } else if (dragSide === 'left') {
+                    newValue = (mouseX / overlayCanvas.width) * 100;
+                    newValue = Math.max(0, Math.min(newValue, limit));
+                    if (newValue < (100 - parseFloat(margins.right.value))) {
+                        margins.left.value = newValue;
+                    }
+                } else if (dragSide === 'right') {
+                    newValue = (1 - (mouseX / overlayCanvas.width)) * 100;
+                    newValue = Math.max(0, Math.min(newValue, limit));
+                    if (newValue < (100 - parseFloat(margins.left.value))) {
+                        margins.right.value = newValue;
+                    }
+                }
+                updateMarginDisplay(dragSide);
+            } else {
+                // Update cursor
+                const topPercent = parseFloat(margins.top.value) / 100;
+                const rightPercent = parseFloat(margins.right.value) / 100;
+                const bottomPercent = parseFloat(margins.bottom.value) / 100;
+                const leftPercent = parseFloat(margins.left.value) / 100;
+
+                const cropLeft = overlayCanvas.width * leftPercent;
+                const cropRight = overlayCanvas.width * (1 - rightPercent);
+                const cropTop = overlayCanvas.height * topPercent;
+                const cropBottom = overlayCanvas.height * (1 - bottomPercent);
+
+                let cursor = 'default';
+                if (Math.abs(mouseY - cropTop) < thresholdY) cursor = 'row-resize';
+                else if (Math.abs(mouseY - cropBottom) < thresholdY) cursor = 'row-resize';
+                else if (Math.abs(mouseX - cropLeft) < thresholdX) cursor = 'col-resize';
+                else if (Math.abs(mouseX - cropRight) < thresholdX) cursor = 'col-resize';
+
+                overlayCanvas.style.cursor = cursor;
+            }
+        });
+
+        overlayCanvas.addEventListener('mouseup', function() {
+            isDragging = false;
+            dragSide = null;
+        });
+
+        overlayCanvas.addEventListener('mouseleave', function() {
+            isDragging = false;
+            dragSide = null;
         });
         
         function drawOverlay() {

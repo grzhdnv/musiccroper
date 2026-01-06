@@ -179,7 +179,6 @@ main {
     top: 1rem;
     left: 50%;
     transform: translateX(-50%);
-    pointer-events: none;
 }
 
 .page-controls {
